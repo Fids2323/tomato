@@ -1,6 +1,3 @@
-import { task } from "./task";
-console.log(task.id);
-
 let count = 0;
 const imp = ["default", "important", "so-so"];
 document
