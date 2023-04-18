@@ -1,70 +1,63 @@
-import { Task } from "./task";
+import { render } from "./RenderTomato";
+import { editStorage, getStorage } from "./serviceStorage";
+import { state } from "./state";
+import { startTimer } from "./timer";
 
-export class Tomato {
-  constructor({
-    taskTime = 25,
-    breakTime = 5,
-    longBreakTime = 15,
-    tasks = [],
-  }) {
+class Tomato {
+  constructor({ taskTime = 20, breakTime = 5, longBreakTime = 15 }) {
+    if (Tomato.instance) {
+      return Tomato.instance;
+    }
+
     this.taskTime = taskTime;
     this.breakTime = breakTime;
     this.longBreakTime = longBreakTime;
-    this.tasks = tasks;
-    this.activeTask = null;
+    this.tasks = getStorage("tasks");
+    this.activeTask = "null";
+    this.render = render;
+
+    Tomato.instance = this;
   }
 
   addTask(task) {
     this.tasks.push(task);
+    console.log(this.tasks);
+    this.render.renderTaskList(this.tasks);
   }
 
-  activateTask(taskId) {
-    const task = this.tasks.find((task) => task.id === taskId);
+  activateTask(text) {
+    const task = this.tasks.find((task) => task.name === text);
     if (task) {
       this.activeTask = task;
-      console.log(`Task ${this.activeTask.id} activated.`);
+      state.activeTask = task;
+      console.log(`Task ${this.activeTask.name} activated.`);
     } else {
-      console.log(`Task ${taskId} not found.`);
+      console.log(`Task ${text} not found.`);
     }
+    render.renderActiveTask();
   }
 
   startTask() {
-    if (this.activeTask) {
-      console.log(`Task ${this.activeTask.id} started.`);
-      setTimeout(() => {
-        console.log(`Task ${this.activeTask.id} finished.`);
-
-        if (this.counter % 3 === 0) {
-          console.log(`Starting long break for ${this.longBreakTime} minutes.`);
-          setTimeout(() => {
-            console.log(`Long break finished.`);
-          }, this.longBreakTime * 60000);
-        } else {
-          console.log(`Starting short break for ${this.breakTime} minutes.`);
-          setTimeout(() => {
-            console.log(`Short break finished.`);
-          }, this.breakTime * 60000);
-        }
-        this.increaseTaskCounter(this.activeTask.id);
-      }, this.taskTime * 60000);
-    } else {
-      console.log(`No active task.`);
-    }
+    startTimer();
+  }
+  stopTask(seconds) {
+    render.renderTime(seconds);
+    render.renderStopActiveTask();
   }
 
-  increaseTaskCounter(taskId) {
-    const task = this.tasks.find((task) => task.id === taskId);
-    if (task) {
-      task.incrementCount();
-    } else {
-      console.log(`Task ${taskId} not found.`);
+  editTask(oldTitle, newTitle) {
+    const taskItem = this.tasks.find((task) => task.name === oldTitle);
+    taskItem.name = newTitle;
+    editStorage("tasks", taskItem);
+    if (state.activeTask && taskItem.name === state.activeTask.name) {
+      state.activeTask.name = taskItem.name;
+      render.renderActiveTask;
     }
+
+    render.renderTaskList(this.tasks);
   }
 }
 
-const taskTest = new Task("Test", 2);
-const tomatoTimer = new Tomato({});
+export const tomatoTimer = new Tomato({});
 
-tomatoTimer.addTask(taskTest);
-tomatoTimer.activateTask(taskTest.id);
-tomatoTimer.startTask();
+export default Tomato;
